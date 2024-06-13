@@ -8,6 +8,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      textShadow: {
+        'text-outline': '0 0 2px black, 0 0 2px black', // カスタムのtext shadowを追加
+      },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":

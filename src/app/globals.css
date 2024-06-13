@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+@import 'swiper/css';
+@import 'swiper/css/navigation';
+@import 'swiper/css/pagination';
+
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -31,3 +36,23 @@ body {
     text-wrap: balance;
   }
 }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.blinking {
+  animation: blink 0.5s infinite;
+}
+
+/* .hover-label {
+  position: absolute;
+  pointer-events: none;
+  color: white;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 5px;
+  border-radius: 3px;
+  font-size: 14px;
+  z-index: 100;
+} */

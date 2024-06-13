@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { PositionProvider } from '@/components/hooks/PositionContext'
 import "./globals.css";
+import { PointOverlProvider } from "@/components/hooks/PointOverContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,7 +18,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <PointOverlProvider>
+          <PositionProvider>
+            {children}
+          </PositionProvider>
+        </PointOverlProvider>
+      </body>
     </html>
   );
 }

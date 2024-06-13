@@ -1,21 +1,35 @@
 'use client'
 
-import { OrbitControls } from "@react-three/drei";
 import { Canvas, useFrame} from "@react-three/fiber";
-import { log } from "console";
 import Image from "next/image";
 import { useRef, useState, useEffect, useCallback } from "react";
 import * as THREE from 'three';
+import { usePosition } from '@/components/hooks/PositionContext';
 
 import Test_MVP from "@/components/Test_MVP";
 import UpdateCamera from "@/components/UpdateCamera";
+import Header from "@/components/Header";
+import Video from "@/components/Video";
+import Controller from "@/components/Controller";
+import TextSpace from "@/components/TextSpace";
+import CameraModal from "@/components/CameraModal";
+import useDragAndZoom from "@/components/hooks/useDragAndZoom";
+import useCanvasTransform from "@/components/hooks/useCanvasTransform";
+import ProductModal from "@/components/ProductModal";
+
 
 const Home: React.FC = () => {
   const [cameraPosition, setCameraPosition] = useState(new THREE.Vector3(0.52, 0.1, 0));
   const [cameraQuaternion, setCameraQuaternion] = useState(new THREE.Quaternion());
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSlide, setSelectedSlide] = useState(0); // 選択されたスライドのインデックスを管理
+  const [currentAudioIndex, setCurrentAudioIndex] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false); // 再生中かどうかのステート
+  // for ProductModal
+  const [isClick, setIsClick] = useState<boolean>(false);
+  const [productName, setProductName] = useState<string>("");
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const focalLength = 50; // 焦点距離 50mm
   const sensorHeight = 20; // センサー高さ 24mm
@@ -25,78 +39,102 @@ const Home: React.FC = () => {
 
   const handleCameraData = useCallback((position: THREE.Vector3, quaternion: THREE.Quaternion) => {
     setCameraPosition(position);
-    setCameraQuaternion(quaternion);    
+    setCameraQuaternion(quaternion);
   }, []);
 
-  const updateCanvasSizeAndPosition = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
+  const openModal = () => setIsModalOpen(true)
+  const closeModal = () => setIsModalOpen(false);
 
-      const videoAspectRatio = video.videoWidth / video.videoHeight;
-      const containerAspectRatio = window.innerWidth / window.innerHeight;
+  const productOpenModal = () => setIsClick(true)
+  const productCloseModal = () => setIsClick(false)
 
-      let newWidth, newHeight, offsetX, offsetY;
 
-      if (videoAspectRatio > containerAspectRatio) {
-        newWidth = window.innerWidth;
-        newHeight = newWidth / videoAspectRatio;
-        offsetX = 0;
-        offsetY = (window.innerHeight - newHeight) / 2;
-      } else {
-        newHeight = window.innerHeight;
-        newWidth = newHeight * videoAspectRatio;
-        offsetX = (window.innerWidth - newWidth) / 2;
-        offsetY = 0;
-      }
+  const {
+    scale,
+    position,
+    handleScroll,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd
+  } = usePosition();
 
-      canvas.style.width = `${newWidth}px`;
-      canvas.style.height = `${newHeight}px`;
-      canvas.style.left = `${offsetX}px`;
-      canvas.style.top = `${offsetY}px`;
-    }
-  };
+  const {
+    updateCanvasSize,
+    updateCanvasTransform
+  } = useCanvasTransform(1, { x: 0, y: 0 }, { min: 0.5, max: 3 })
 
+  const updateCanvas = () => {
+    updateCanvasTransform(videoRef, canvasContainerRef);
+    updateCanvasSize(videoRef, canvasContainerRef)
+    
+  }
+  
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.addEventListener('loadedmetadata', updateCanvasSizeAndPosition);
+
+    updateCanvasTransform(videoRef, canvasContainerRef);
+    updateCanvasSize(videoRef, canvasContainerRef)
+    window.addEventListener('resize', updateCanvas);
+
+
+  }, [position, scale]);
+  
+  useEffect(() => {
+    const canvasContainerElement = canvasContainerRef.current;
+    if (canvasContainerElement) {
+      canvasContainerElement.style.transform = `translate(${position.x}px, ${position.y}px) scale(${scale})`;  
+      
     }
-    window.addEventListener('resize', updateCanvasSizeAndPosition);
-
-    return () => {
-      if (videoRef.current) {
-        videoRef.current.removeEventListener('loadedmetadata', updateCanvasSizeAndPosition);
-      }
-      window.removeEventListener('resize', updateCanvasSizeAndPosition);
-    };
-  }, []);
-
+    
+    
+  }, [scale, position]);
   return (
     // Ground Container
-
-    <div className="flex items-center justify-center h-screen w-screen relative">
-       <div className="absolute top-0 left-0 h-full w-full">
-        <div className="relative h-full w-full" ref={canvasRef}>
+      <div className="h-screen relative overflow-hidden justify-center flex" onWheel={handleScroll} >
+        <Header />
+        <div 
+          ref={canvasContainerRef} 
+          className="z-10 flex justify-center absolute" 
+          style={{pointerEvents:"none"}}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          >
           <Canvas
-            className="absolute top-0 left-0 h-full w-full object-contain z-10"
             camera={{ fov: fovDegrees, position: cameraPosition }}
-            gl={{ antialias: true }}
-            style={{ background: '#87ceeb' }} // 背景色を設定
+            gl={{ antialias: true, alpha: true }} // alpha: trueを追加
+            style={{ background: 'none', pointerEvents: 'none' }} // 背景色を透明に設定
           >
             <ambientLight intensity={0.5} />
-            <pointLight position={[10, 10, 10]} />
-            <Test_MVP onCameraData={handleCameraData} />
+            <Test_MVP 
+              onCameraData={handleCameraData}
+              currentAudioIndex={currentAudioIndex}
+              videoRef = {videoRef}
+              isClick = {isClick} 
+              setIsClick ={setIsClick}
+              setProductName={setProductName}
+              selectedSlide={selectedSlide}
+              isPlaying={isPlaying} 
+            />
             <UpdateCamera cameraPosition={cameraPosition} cameraQuaternion={cameraQuaternion} />
-            {/* <OrbitControls /> */}
           </Canvas>
-          <video
-            ref={videoRef}
-            className="absolute top-0 left-0 h-full w-full object-contain"
-            src="/mono_review_test.mp4"
-          ></video>
         </div>
+        <Video 
+          selectedSlide={selectedSlide}
+          isOpen={isModalOpen}
+          videoRef = {videoRef}
+        />
+        <Controller isPlaying={isPlaying} setIsPlaying={setIsPlaying} currentAudioIndex ={currentAudioIndex} setCurrentAudioIndex={setCurrentAudioIndex} isOpen={isModalOpen} onOpen={openModal}/>
+        <TextSpace currentAudioIndex={currentAudioIndex} isPlaying={isPlaying}/>
+        <CameraModal isOpen={isModalOpen} onClose={closeModal} selectedSlide={selectedSlide} onSelectSlide={setSelectedSlide}/>
+        <ProductModal isClick = {isClick} onClose={productCloseModal} productName = {productName}/>
       </div>
-    </div>
   );
 }
 

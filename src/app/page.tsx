@@ -1,113 +1,103 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { OrbitControls } from "@react-three/drei";
+import { Canvas, useFrame} from "@react-three/fiber";
+import { log } from "console";
+import Image from "next/image";
+import { useRef, useState, useEffect, useCallback } from "react";
+import * as THREE from 'three';
+
+import Test_MVP from "@/components/Test_MVP";
+import UpdateCamera from "@/components/UpdateCamera";
+
+const Home: React.FC = () => {
+  const [cameraPosition, setCameraPosition] = useState(new THREE.Vector3(0.52, 0.1, 0));
+  const [cameraQuaternion, setCameraQuaternion] = useState(new THREE.Quaternion());
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const focalLength = 50; // 焦点距離 50mm
+  const sensorHeight = 20; // センサー高さ 24mm
+  // 本当は24
+  const thetaRad = 2 * Math.atan(sensorHeight / (2 * focalLength));
+  const fovDegrees = thetaRad * (180 / Math.PI);
+
+  const handleCameraData = useCallback((position: THREE.Vector3, quaternion: THREE.Quaternion) => {
+    setCameraPosition(position);
+    setCameraQuaternion(quaternion);    
+  }, []);
+
+  const updateCanvasSizeAndPosition = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+
+      const videoAspectRatio = video.videoWidth / video.videoHeight;
+      const containerAspectRatio = window.innerWidth / window.innerHeight;
+
+      let newWidth, newHeight, offsetX, offsetY;
+
+      if (videoAspectRatio > containerAspectRatio) {
+        newWidth = window.innerWidth;
+        newHeight = newWidth / videoAspectRatio;
+        offsetX = 0;
+        offsetY = (window.innerHeight - newHeight) / 2;
+      } else {
+        newHeight = window.innerHeight;
+        newWidth = newHeight * videoAspectRatio;
+        offsetX = (window.innerWidth - newWidth) / 2;
+        offsetY = 0;
+      }
+
+      canvas.style.width = `${newWidth}px`;
+      canvas.style.height = `${newHeight}px`;
+      canvas.style.left = `${offsetX}px`;
+      canvas.style.top = `${offsetY}px`;
+    }
+  };
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.addEventListener('loadedmetadata', updateCanvasSizeAndPosition);
+    }
+    window.addEventListener('resize', updateCanvasSizeAndPosition);
+
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.removeEventListener('loadedmetadata', updateCanvasSizeAndPosition);
+      }
+      window.removeEventListener('resize', updateCanvasSizeAndPosition);
+    };
+  }, []);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    // Ground Container
+
+    <div className="flex items-center justify-center h-screen w-screen relative">
+       <div className="absolute top-0 left-0 h-full w-full">
+        <div className="relative h-full w-full" ref={canvasRef}>
+          <Canvas
+            className="absolute top-0 left-0 h-full w-full object-contain z-10"
+            camera={{ fov: fovDegrees, position: cameraPosition }}
+            gl={{ antialias: true }}
+            style={{ background: '#87ceeb' }} // 背景色を設定
           >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            <ambientLight intensity={0.5} />
+            <pointLight position={[10, 10, 10]} />
+            <Test_MVP onCameraData={handleCameraData} />
+            <UpdateCamera cameraPosition={cameraPosition} cameraQuaternion={cameraQuaternion} />
+            {/* <OrbitControls /> */}
+          </Canvas>
+          <video
+            ref={videoRef}
+            className="absolute top-0 left-0 h-full w-full object-contain"
+            src="/mono_review_test.mp4"
+          ></video>
         </div>
       </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </div>
   );
 }
+
+export default Home;

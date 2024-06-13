@@ -16,9 +16,8 @@ interface CameraModalProps {
   }
 
 const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onSelectSlide,selectedSlide }) => {
-  if (!isOpen) return null;
-
   const { isPointerOver, setIsPointerOver } = useControl();
+  if (!isOpen) return null;
   const videos = data.videos
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {

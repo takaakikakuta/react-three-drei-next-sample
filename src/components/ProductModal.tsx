@@ -21,9 +21,8 @@ const products = [
 ]
 
 const ProductModal: React.FC<CameraModalProps>  = ({isClick, onClose, productName}) => {
+  const { isPointerOver, setIsPointerOver } = useControl();
     if (!isClick) return null;
-
-    const { isPointerOver, setIsPointerOver } = useControl();
 
     const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
       if (event.target === event.currentTarget) {

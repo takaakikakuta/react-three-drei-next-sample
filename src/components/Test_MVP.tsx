@@ -87,7 +87,7 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
 
-  }, [gl, mainScene, camera, size]);
+  }, [gl, mainScene, camera, size, selectedSlide]);
 
   useEffect(() => {
     // インデックスに基づいてオブジェクトのリストを取得し、それをhoveredObjectsに設定

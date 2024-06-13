@@ -43,7 +43,7 @@ const Video: React.FC<VideoProps> = ({
       }
       
       
-    }, [scale, position, isOpen, selectedSlide]);
+    }, [scale, position, isOpen, selectedSlide, videoRef]);
 
   return (
     <>

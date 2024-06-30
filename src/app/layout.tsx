@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { PositionProvider } from '@/components/hooks/PositionContext'
 import "./globals.css";
 import { PointOverlProvider } from "@/components/hooks/PointOverContext";
+import React, { Suspense } from 'react';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,11 +20,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+      <Suspense fallback={<div>Loading...</div>}>
         <PointOverlProvider>
           <PositionProvider>
             {children}
           </PositionProvider>
         </PointOverlProvider>
+      </Suspense>
       </body>
     </html>
   );

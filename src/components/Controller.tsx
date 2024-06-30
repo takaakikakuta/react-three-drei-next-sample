@@ -12,15 +12,16 @@ interface ControllerProps {
   setCurrentAudioIndex: React.Dispatch<React.SetStateAction<number>>;
   isPlaying:boolean;
   setIsPlaying:React.Dispatch<React.SetStateAction<boolean>>
+  isSound:boolean;
+  setIsSound:React.Dispatch<React.SetStateAction<boolean>>
 
 }
 
 
-const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioIndex, setCurrentAudioIndex, isPlaying, setIsPlaying}) => {
+const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioIndex, setCurrentAudioIndex, isPlaying, setIsPlaying, isSound, setIsSound}) => {
   const circleRef = useRef<SVGCircleElement>(null);
   // const [percent, setPercent] = useState<number>(50);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [isSound, setIsSound] = useState<boolean>(false);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
   const { isPointerOver, setIsPointerOver } = useControl();
@@ -218,7 +219,7 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
       onStop={() => setIsDragging(false)}
       defaultPosition={{ x: 0, y: 0 }}>
         <div 
-          className='overflow-hidden absolute bottom-10 md:left-10 w-72 md:w-60 h-auto bg-pink-500 z-50 rounded-xl transform -translate-x-1/2 flex flex-col items-center'
+          className='overflow-hidden absolute bottom-10 md:left-10 w-72 md:w-60 h-auto md:pb-4 pb-0 bg-green-500 z-50 rounded-xl transform -translate-x-1/2 flex flex-col items-center'
           onMouseEnter={() => setIsPointerOver(true)}
           onMouseLeave={() => setIsPointerOver(false)}
         >
@@ -241,7 +242,7 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
                         className="text-blue-500" />
                   </svg>
                   <span 
-                    className="absolute text-xl cursor-pointer text-center" 
+                    className="absolute md:text-xl text-sm cursor-pointer text-center" 
                     onMouseDown={handleMouseDown}
                     onMouseUp={increaseHandleMouseUp}
                     onTouchStart={handleTouchStart}
@@ -251,7 +252,7 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
                     {progress} / {audioFiles.length}
                   </span>
                 </div>
-                <div className="w-48 h-24 bg-orange-400 p-2 pb-4 mr-2 rounded-xl">
+                <div className="w-48 md:h-32 h-24 bg-orange-400 p-2 pb-4 mr-2 rounded-xl">
                   <div className="flex h-1/2 mb-2">
                     <button 
                     className={`w-1/2 h-full mr-1 rounded-lg flex justify-center items-center ${percent === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-400'}`}
@@ -276,7 +277,7 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
                   </div>
                   <div className="flex h-1/2">
                     <button 
-                      className="w-1/2 h-full bg-red-400 mr-1 rounded-lg flex justify-center items-center"
+                      className="w-1/2 h-full bg-red-400 mr-1 rounded-lg flex flex-col justify-center items-center shadow-lg"
                       onMouseDown={handleMouseDown}
                       onMouseUp={handleOpenMouseUp}
                       onTouchStart={handleTouchStart}
@@ -285,21 +286,24 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
                       </svg>
+                      <p className='hidden md:flex'>カメラ切替</p>
                     </button>
                     <button 
                       id="sound"
-                      className={`w-1/2 h-full bg-red-400 mr-1 rounded-lg flex justify-center items-center ${isPlaying ? 'blinking' : ''}`}
+                      className={`w-1/2 h-full bg-red-400 mr-1 rounded-lg flex flex-col justify-center items-center mx-auto shadow-lg ${isPlaying ? 'blinking' : ''}`}
                       onMouseDown={handleMouseDown}
                       onMouseUp={handleSoundMouseUp}
                       onTouchStart={handleTouchStart}
                       onTouchEnd={handleSoundMouseUp}>
                       { isSound ?    
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 flex">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
-                        </svg>:<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+                        </svg>:<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6 flex">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6 4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.009 9.009 0 0 1 2.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75Z" />
                         </svg>
+                        
                       }
+                      <p className='hidden md:flex'>音声出力</p>
                     </button>
                   </div>
                 </div>

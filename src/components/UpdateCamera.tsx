@@ -7,7 +7,6 @@ const UpdateCamera:React.FC<{ cameraPosition: THREE.Vector3, cameraQuaternion: T
         camera.position.copy(cameraPosition);
         camera.quaternion.copy(cameraQuaternion);
         camera.updateProjectionMatrix();
-        // console.log(cameraPosition);
       });
       return null;
 }

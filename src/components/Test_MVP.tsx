@@ -11,11 +11,13 @@ import { ShaderPass } from 'three-stdlib';
 import { FXAAShader } from 'three-stdlib';
 import { useControl } from './hooks/PointOverContext';
 import { data } from './data'; // データファイルをインポート
+import { usePosition } from './hooks/PositionContext';
 
 extend({ EffectComposer, RenderPass, OutlinePass, ShaderPass });
 
 const outlineObject = data.outlineObject
 const raycastList = data.raycastList
+const displayName = data.displayName
 
 interface TestMVPProps {
   onCameraData: (position: THREE.Vector3, quaternion: THREE.Quaternion) => void;
@@ -30,23 +32,34 @@ interface TestMVPProps {
 
 const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, videoRef, setProductName, setIsClick, selectedSlide, isPlaying}) => {
   const groupRef = useRef<THREE.Group>(null!);
-  const { scene: modelScene, cameras, animations } = useGLTF('/videoModel.glb'); // GLBファイルのパスを指定
-  const  { actions, names}  = useAnimations(animations, groupRef)
+  const { scene: modelScene, cameras, animations } = useGLTF('/MapModel_Animation.glb'); // GLBファイルのパスを指定
+  const  { actions, names}  = useAnimations(animations)
   const { gl, camera, size, pointer, raycaster, scene: mainScene } = useThree();
   const [hoveredObject, setHoveredObject] = useState<THREE.Object3D | null>();
-  const [hoveredObjects, setHoveredObjects] = useState<THREE.Object3D[]>([]);
+  const [narrationObjects, setNarrationObjects] = useState<THREE.Object3D[]>([]);
   const [hoveredObjectPosition, setHoveredObjectPosition] = useState<THREE.Vector3 | null>(null);
   const [hoveredObjectName, setHoveredObjectName] = useState<string | null>(null); // Add state to store hovered object name
   const composerRef = useRef<EffectComposer | null>(null);
   const outlinePassRef = useRef<OutlinePass | null>(null);
   const { isPointerOver, setIsPointerOver } = useControl();
+
+  const {
+    scale,
+    position,
+  } = usePosition();
+
+  const composer = new EffectComposer(gl);
   
   useEffect(() => {
     if (cameras && cameras.length > 0) {
-      const camera = cameras[selectedSlide] as THREE.PerspectiveCamera;
-      console.log(camera);
-      
-      onCameraData(camera.position.clone(), camera.quaternion.clone());
+      const cameraName = `M_Linear_${selectedSlide}`;
+      const selectedCamera = cameras.find(cam => cam.name === cameraName) as THREE.PerspectiveCamera;
+
+      if (selectedCamera) {
+        onCameraData(selectedCamera.position.clone(), selectedCamera.quaternion.clone());
+      } else {
+        console.warn(`Camera with name ${cameraName} not found`);
+      }
     }
 
     // モデルを透明に設定
@@ -56,30 +69,31 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
         child.material.opacity = 0.0; // 不透明度を設定（0.0〜1.0）
         child.frustumCulled = false; // フラスタムカリングを無効にする
       }
-    });
+    });   
 
   }, [actions, animations, cameras, onCameraData, modelScene]);
 
   useEffect(() => {
     const videoElement = videoRef.current;
 
-    const composer = new EffectComposer(gl);
     composer.addPass(new RenderPass(mainScene, camera));
 
-    const outlinePass = new OutlinePass(new THREE.Vector2(size.width, size.height), mainScene, camera);
-    composer.addPass(outlinePass);
-    outlinePassRef.current = outlinePass;
-
-    const effectFXAA = new ShaderPass(FXAAShader);
-    effectFXAA.uniforms['resolution'].value.set(1 / size.width, 1 / size.height);
-    composer.addPass(effectFXAA);
+    if(videoElement){
+      composer.setSize(videoElement.clientWidth, videoElement.clientHeight);
+      console.log("発火");
+      console.log(videoElement.clientWidth);
+    }
 
     composerRef.current = composer;
+
+    console.log(composerRef.current);
+    
 
     const handleResize = () => {
       if(videoElement){
         composer.setSize(videoElement.clientWidth, videoElement.clientHeight);
-        effectFXAA.uniforms['resolution'].value.set(1 / videoElement.clientWidth, 1 / videoElement.clientHeight);
+        console.log(videoElement);
+        
         
       }
     };
@@ -87,19 +101,29 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
 
-  }, [gl, mainScene, camera, size, selectedSlide]);
+  }, [gl, mainScene, camera, selectedSlide, scale, position]);
 
   useEffect(() => {
     // インデックスに基づいてオブジェクトのリストを取得し、それをhoveredObjectsに設定
     const objectsToHighlight = outlineObject[currentAudioIndex].map(name => {
       const foundObject = modelScene.getObjectByName(name);
       if (foundObject) {
-        return foundObject;
+        const clonedObject = foundObject.clone();
+        // foundObjectの親がSceneでない場合、親のポジションを加算
+        if (foundObject.parent && foundObject.parent.name !== 'Scene') {
+          const parentPosition = new THREE.Vector3();
+          console.log(parentPosition);
+          
+          foundObject.parent.getWorldPosition(parentPosition);
+          clonedObject.position.add(parentPosition);
+      }
+      return clonedObject;
       }
       return null;
     }).filter(obj => obj !== null) as THREE.Object3D[];
 
-    setHoveredObjects(objectsToHighlight);
+    setNarrationObjects(objectsToHighlight);
+    
   }, [currentAudioIndex, modelScene]);
 
    // マウスの移動に応じてポインターの座標を更新
@@ -141,8 +165,14 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
 
     // カメラの更新
     if (cameras && cameras.length > 0) {
-      const camera = cameras[selectedSlide];
-      onCameraData(camera.position.clone(), camera.quaternion.clone());
+      const cameraName = `M_Linear_${selectedSlide}`;
+      const selectedCamera = cameras.find(cam => cam.name === cameraName) as THREE.PerspectiveCamera;
+
+      if (selectedCamera) {
+        onCameraData(selectedCamera.position.clone(), selectedCamera.quaternion.clone());
+      } else {
+        console.warn(`Camera with name ${cameraName} not found`);
+      }
     }
 
     // レイキャスティング
@@ -156,10 +186,11 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
     const intersects = raycaster.intersectObjects(raycastObjects, true);
 
     if (intersects.length > 0) {
-      const firstIntersect = intersects[0].object;
+      const firstIntersect = intersects[0].object;      
       setHoveredObject(firstIntersect);      
       setHoveredObjectPosition(firstIntersect.position.clone());
       setHoveredObjectName(firstIntersect.name); // Set hovered object name
+      
       
     } else {
       setHoveredObject(null);
@@ -167,24 +198,7 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
       setHoveredObjectName(null); // Reset hovered object name
     }
 
-    if(outlinePassRef.current){
-      if (hoveredObjects.length > 0 && isPlaying) {
-
-        outlinePassRef.current.selectedObjects = hoveredObjects;
-  
-          // 点滅のためにアウトラインの可視性を変更
-          const time = state.clock.getElapsedTime();
-          outlinePassRef.current.edgeStrength = Math.sin(time * 5) * 2 + 2; // 辺の強度を変える
-          outlinePassRef.current.visibleEdgeColor.setHSL(Math.sin(time * 5) * 0.5 + 0.5, 1.0, 0.5); // 色を変更         
-          
-      
-        } else {
-        outlinePassRef.current.selectedObjects = [];
-      }
-
-    }
-
-    
+    // ここの処理useFrameが走らなくなるから消せない
 
     if (composerRef.current) {
       composerRef.current.render();
@@ -193,16 +207,33 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
      
   }, 1);
 
+  const displayText = hoveredObjectName && displayName.hasOwnProperty(hoveredObjectName)
+    ? displayName[hoveredObjectName as keyof typeof displayName]
+    : hoveredObjectName;
+    
+
   return (
     <>
-      <primitive ref={groupRef} object={modelScene}  style={{width: "100px"}}/>
+      <primitive object={modelScene}/>
       {hoveredObjectName && hoveredObjectPosition && (
         <Html position={hoveredObjectPosition} center>
-          <div style={{ color: 'white', background: 'black', padding: '5px', borderRadius: '5px' }}>
-            {hoveredObjectName}
-          </div>
+          <div className="flex w-40" style={{ color: 'white', background: 'black', padding: '5px', borderRadius: '5px', opacity:"50%" }}
+            dangerouslySetInnerHTML={{ __html: displayText || "" }}
+          />
         </Html>
       )}
+       {narrationObjects && narrationObjects.map((object, index) => {
+        const narrationName = displayName.hasOwnProperty(object.name)
+          ? displayName[object.name as keyof typeof displayName]
+          : object.name;
+        return (
+          <Html key={`${object.uuid}-${index}`} position={object.position} center>
+            <div className="flex w-40" style={{ color: 'white', background: 'black', padding: '5px', borderRadius: '5px', opacity:"50%"  }}
+            dangerouslySetInnerHTML={{ __html: narrationName || "" }}
+          />
+          </Html>
+        );
+      })}
     </>
   );
 };

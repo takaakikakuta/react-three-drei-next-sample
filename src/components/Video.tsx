@@ -6,12 +6,14 @@ interface VideoProps {
   selectedSlide: number;
   isOpen: boolean;
   videoRef:React.RefObject<HTMLVideoElement>;
+  isSound:boolean;
 }
 
 const Video: React.FC<VideoProps> = ({ 
   selectedSlide,
   isOpen,
-  videoRef
+  videoRef,
+  isSound
 }) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -27,13 +29,23 @@ const Video: React.FC<VideoProps> = ({
     handleTouchMove,
     handleTouchEnd,
   } = usePosition();
-
-    // const {
-    //   handleVideoSizeChange
-    // } = useCanvasTransform(1, { x: 0, y: 0 }, { min: 0.5, max: 3 })
-
     
   const videos = data.videos
+  const [currentVideo, setCurrentVideo] = useState<string>("");
+  const [nextVideo, setNextVideo] = useState<string>("");
+
+  const selectRandomVideo = () => {
+    const videoList = videos[selectedSlide];
+    const randomIndex = Math.floor(Math.random() * videoList.length);
+    return videoList[randomIndex];
+  };
+
+  useEffect(() => {
+    // selectedSlideのインデックスに基づいてビデオリストを取得し、ランダムに選択
+    const initialVideo = selectRandomVideo();
+    setCurrentVideo(initialVideo);
+    setNextVideo(initialVideo); // 初回は同じビデオを設定
+  }, [selectedSlide, videos]);
 
     useEffect(() => {
       const videoElement = videoRef.current;
@@ -44,6 +56,41 @@ const Video: React.FC<VideoProps> = ({
       
       
     }, [scale, position, isOpen, selectedSlide, videoRef]);
+
+    useEffect(() => {
+      const videoElement = videoRef.current;
+      if (videoElement) {
+        videoElement.muted = !isSound;
+      }
+    }, [isSound, videoRef]);
+
+    const handleVideoEnded = () => {
+      const videoElement = videoRef.current;
+    if (videoElement) {
+      videoElement.pause(); // 一度ビデオを停止
+
+      // 次のビデオを選択し、ロードイベントで再生を開始
+      const newVideo = selectRandomVideo();
+      setNextVideo(newVideo);
+
+      // 一時的に src を空にして再設定
+      videoElement.src = "";
+      // videoElement.load();
+      setTimeout(() => {
+        videoElement.src = newVideo;
+        videoElement.load(); // 再度ロード
+        videoElement.play();
+      }, 1); // 1秒待つ
+    };
+  }
+
+    const handleLoadedData = () => {
+      setCurrentVideo(nextVideo); // ビデオがロードされたら現在のビデオを更新
+      const videoElement = videoRef.current;
+      if (videoElement) {
+        videoElement.play(); // 新しいビデオを再生
+      }
+    };
 
   return (
     <>
@@ -67,10 +114,11 @@ const Video: React.FC<VideoProps> = ({
               maxWidth: 'none',
             }}
             className="transition-transform duration-0"
-            src={videos[selectedSlide]}
+            src={currentVideo}
             autoPlay
             muted
-            loop
+            onEnded={handleVideoEnded}
+            onLoadedData={handleLoadedData} // ビデオがロードされたら呼び出されるイベント
             ></video>
 
       </div>

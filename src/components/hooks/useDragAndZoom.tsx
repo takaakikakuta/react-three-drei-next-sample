@@ -12,12 +12,11 @@ const useDragAndZoom = (
     const [initialMousePosition, setInitialMousePosition] = useState({ x: 0, y: 0 });
   
     const handleScroll = useCallback((event: React.WheelEvent) => {
-    //   event.preventDefault();
       const newScale = scale + event.deltaY * -0.001;
       if (newScale > scaleLimits.min && newScale < scaleLimits.max) {
         setScale(newScale);
       }
-    }, [scale, scaleLimits.min, scaleLimits.max]);
+    }, [scale]);
   
     const handleMouseDown = useCallback((event: React.MouseEvent) => {
       event.preventDefault();

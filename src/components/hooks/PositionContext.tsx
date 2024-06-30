@@ -29,6 +29,7 @@ export const PositionProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [scale, setScale] = useState(1);
   const [dragging, setDragging] = useState(false);
   const [initialMousePosition, setInitialMousePosition] = useState({ x: 0, y: 0 });
+  const [initialDistance, setInitialDistance] = useState<number | null>(null);
 
   const handleScroll = useCallback((event: React.WheelEvent) => {
     const newScale = scale + event.deltaY * -0.001;
@@ -56,22 +57,40 @@ export const PositionProvider: React.FC<{ children: ReactNode }> = ({ children }
   }, []);
 
   const handleTouchStart = useCallback((event: React.TouchEvent) => {
-    setDragging(true);
-    const touch = event.touches[0];
-    setInitialMousePosition({ x: touch.clientX - position.x, y: touch.clientY - position.y });
+    if (event.touches.length === 1) {
+      setDragging(true);
+      const touch = event.touches[0];
+      setInitialMousePosition({ x: touch.clientX - position.x, y: touch.clientY - position.y });
+    } else if (event.touches.length === 2) {
+      setDragging(false);
+      const dx = event.touches[0].clientX - event.touches[1].clientX;
+      const dy = event.touches[0].clientY - event.touches[1].clientY;
+      setInitialDistance(Math.sqrt(dx * dx + dy * dy));
+    }
   }, [position]);
 
   const handleTouchMove = useCallback((event: React.TouchEvent) => {
-    if (dragging) {
+    if (dragging && event.touches.length === 1) {
       const touch = event.touches[0];
       const newX = touch.clientX - initialMousePosition.x;
       const newY = touch.clientY - initialMousePosition.y;
       setPosition({ x: newX, y: newY });
+    } else if (event.touches.length === 2 && initialDistance !== null) {
+      const dx = event.touches[0].clientX - event.touches[1].clientX;
+      const dy = event.touches[0].clientY - event.touches[1].clientY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const scaleChange = distance / initialDistance;
+      setScale(prevScale => {
+        const newScale = prevScale * scaleChange;
+        return newScale > 0.5 && newScale < 3 ? newScale : prevScale;
+      });
+      setInitialDistance(distance);
     }
-  }, [dragging, initialMousePosition]);
+  }, [dragging, initialMousePosition, initialDistance]);
 
   const handleTouchEnd = useCallback(() => {
     setDragging(false);
+    setInitialDistance(null);
   }, []);
 
   return (

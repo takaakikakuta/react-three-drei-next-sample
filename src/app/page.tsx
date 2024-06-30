@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRef, useState, useEffect, useCallback } from "react";
 import * as THREE from 'three';
 import { usePosition } from '@/components/hooks/PositionContext';
+import { useSearchParams } from "next/navigation";
 
 import Test_MVP from "@/components/Test_MVP";
 import UpdateCamera from "@/components/UpdateCamera";
@@ -25,17 +26,29 @@ const Home: React.FC = () => {
   const [selectedSlide, setSelectedSlide] = useState(0); // 選択されたスライドのインデックスを管理
   const [currentAudioIndex, setCurrentAudioIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false); // 再生中かどうかのステート
+  const [isSound, setIsSound] = useState<boolean>(false);
   // for ProductModal
   const [isClick, setIsClick] = useState<boolean>(false);
   const [productName, setProductName] = useState<string>("");
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // ビデオサイズ取得
+
+
+  // const [position,setPosition] = useState(new THREE.Vector2())
 
   const focalLength = 50; // 焦点距離 50mm
   const sensorHeight = 20; // センサー高さ 24mm
   // 本当は24
   const thetaRad = 2 * Math.atan(sensorHeight / (2 * focalLength));
   const fovDegrees = thetaRad * (180 / Math.PI);
+
+  // クエリパラメーターの取得
+  const searchParams = useSearchParams();
+  const param = searchParams.get("param"); 
+  
 
   const handleCameraData = useCallback((position: THREE.Vector3, quaternion: THREE.Quaternion) => {
     setCameraPosition(position);
@@ -69,30 +82,57 @@ const Home: React.FC = () => {
   const updateCanvas = () => {
     updateCanvasTransform(videoRef, canvasContainerRef);
     updateCanvasSize(videoRef, canvasContainerRef)
+    const canvasContainerElement = canvasContainerRef.current;
+    if (canvasContainerElement) {
+      canvasContainerElement.style.transform = `translate(${position.x}px, ${position.y}px) scale(${scale})`;
+      canvasContainerElement.style.width = "1630px";
+      canvasContainerElement.style.height = "911px";
+      
+    }
     
   }
+
+  useEffect(() => {
+    const handleResize = () => {
+      updateCanvas()
+    };
+  
+    window.addEventListener('resize', handleResize);
+  
+    // クリーンアップ関数を返す
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [updateCanvasTransform, updateCanvasSize]);
   
   useEffect(() => {
 
     updateCanvasTransform(videoRef, canvasContainerRef);
     updateCanvasSize(videoRef, canvasContainerRef)
-    window.addEventListener('resize', updateCanvas);
+    
 
-
-  }, [position, scale]);
+  }, [scale, position]);
   
   useEffect(() => {
     const canvasContainerElement = canvasContainerRef.current;
-    if (canvasContainerElement) {
-      canvasContainerElement.style.transform = `translate(${position.x}px, ${position.y}px) scale(${scale})`;  
+    const videoElement = videoRef.current;
+    
+    if (canvasContainerElement && videoElement) {
+      canvasContainerElement.style.transform = `translate(${position.x}px, ${position.y}px) scale(${scale})`; 
+      canvasContainerElement.style.width = "1630px";
+      canvasContainerElement.style.height = "911px";
       
-    }
-    
-    
-  }, [scale, position]);
+    }    
+
+  }, [scale]);
+
+
+
+
+
   return (
     // Ground Container
-      <div className="h-screen relative overflow-hidden justify-center flex" onWheel={handleScroll} >
+      <div className="h-screen relative overflow-hidden justify-center flex">
         <Header />
         <div 
           ref={canvasContainerRef} 
@@ -107,10 +147,18 @@ const Home: React.FC = () => {
           onTouchEnd={handleTouchEnd}
           >
           <Canvas
+            ref={canvasRef}
             camera={{ fov: fovDegrees, position: cameraPosition }}
-            gl={{ antialias: true, alpha: true }} // alpha: trueを追加
-            style={{ background: 'none', pointerEvents: 'none' }} // 背景色を透明に設定
+            gl={{ antialias: true, alpha: true}} // alpha: trueを追加
+            style={{
+              display:"block",
+              width: '1630px',
+              height: '100%',
+              background: 'none',
+              pointerEvents: 'none'
+            }}
           >
+            {/* デバッグ用 */}
             <ambientLight intensity={0.5} />
             <Test_MVP 
               onCameraData={handleCameraData}
@@ -129,8 +177,18 @@ const Home: React.FC = () => {
           selectedSlide={selectedSlide}
           isOpen={isModalOpen}
           videoRef = {videoRef}
+          isSound = {isSound}
         />
-        <Controller isPlaying={isPlaying} setIsPlaying={setIsPlaying} currentAudioIndex ={currentAudioIndex} setCurrentAudioIndex={setCurrentAudioIndex} isOpen={isModalOpen} onOpen={openModal}/>
+        <Controller
+           isPlaying={isPlaying}
+           setIsPlaying={setIsPlaying}
+           currentAudioIndex ={currentAudioIndex}
+           setCurrentAudioIndex={setCurrentAudioIndex}
+           isOpen={isModalOpen} 
+           onOpen={openModal}
+           isSound={isSound}
+           setIsSound={setIsSound}
+          />
         <TextSpace currentAudioIndex={currentAudioIndex} isPlaying={isPlaying}/>
         <CameraModal isOpen={isModalOpen} onClose={closeModal} selectedSlide={selectedSlide} onSelectSlide={setSelectedSlide}/>
         <ProductModal isClick = {isClick} onClose={productCloseModal} productName = {productName}/>

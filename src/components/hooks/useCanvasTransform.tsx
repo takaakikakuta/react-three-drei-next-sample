@@ -14,21 +14,20 @@ const useCanvasTransform = (initialScale = 1, initialPosition = { x: 0, y: 0 }, 
     const videoElement = videoRef.current;
     const canvasContainerElement = canvasContainerRef.current;
     if (videoElement && canvasContainerElement) {
-      canvasContainerElement.style.transform = `translate(${position.x}px, ${position.y}px)`;      
+      canvasContainerElement.style.transform = `translate(${position.x}px, ${position.y}px) scale(${scale})`;
+      canvasContainerElement.style.width = "1630px";
+      canvasContainerElement.style.height = "911px";
     }
 
-  }, [position, scale, handleMouseMove]);
+  }, [position]);
 
   const updateCanvasSize = useCallback((videoRef: React.RefObject<HTMLVideoElement>, canvasContainerRef: React.RefObject<HTMLDivElement>) => {
     const videoElement = videoRef.current;
     const canvasElement = canvasContainerRef.current;
     if (videoElement && canvasElement) {
-      const videoAspectRatio = videoElement.videoWidth / videoElement.videoHeight;
 
-
-
-      canvasElement.style.width = `${videoElement.clientWidth}px`;
-      canvasElement.style.height = `${videoElement.clientHeight}px`;
+      canvasElement.style.width = "1630px";
+      canvasElement.style.height = "911px";
       
     }
   }, [position, scale]);

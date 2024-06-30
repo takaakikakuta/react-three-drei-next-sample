@@ -51,15 +51,11 @@ const CameraModal: React.FC<CameraModalProps> = ({ isOpen, onClose, onSelectSlid
         initialSlide={selectedSlide}
         onSlideChange={(swiper) => onSelectSlide(swiper.activeIndex)}
       >
-        <SwiperSlide>
-          <video src={videos[0]}></video>
-        </SwiperSlide>
-        <SwiperSlide>
-          <video src={videos[1]}></video>
-        </SwiperSlide>
-        <SwiperSlide>
-          <video src={videos[2]}></video>
-        </SwiperSlide>
+        {videos.map((video, index) => (
+          <SwiperSlide key={index}>
+            <video src={video[0]}></video>
+          </SwiperSlide>
+        ))}
         {/* 他のスライド */}
       </Swiper>
       <button

@@ -1,7 +1,6 @@
 'use client'
 
 import { Canvas, useFrame} from "@react-three/fiber";
-import Image from "next/image";
 import { useRef, useState, useEffect, useCallback } from "react";
 import * as THREE from 'three';
 import { usePosition } from '@/components/hooks/PositionContext';
@@ -27,6 +26,7 @@ const Home: React.FC = () => {
   const [currentAudioIndex, setCurrentAudioIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false); // 再生中かどうかのステート
   const [isSound, setIsSound] = useState<boolean>(false);
+  const [firstVideoEnded, setFirstVideoEnded] = useState<boolean>(false); // 最初のビデオ終了ステータス
   // for ProductModal
   const [isClick, setIsClick] = useState<boolean>(false);
   const [productName, setProductName] = useState<string>("");
@@ -126,9 +126,9 @@ const Home: React.FC = () => {
 
   }, [scale]);
 
-
-
-
+  const handleFirstVideoEnd = () => {
+    setFirstVideoEnded(true);
+  }
 
   return (
     // Ground Container
@@ -178,20 +178,25 @@ const Home: React.FC = () => {
           isOpen={isModalOpen}
           videoRef = {videoRef}
           isSound = {isSound}
+          onFirstVideoEnd={handleFirstVideoEnd} // 初回のビデオ終了コールバックを渡す
         />
-        <Controller
-           isPlaying={isPlaying}
-           setIsPlaying={setIsPlaying}
-           currentAudioIndex ={currentAudioIndex}
-           setCurrentAudioIndex={setCurrentAudioIndex}
-           isOpen={isModalOpen} 
-           onOpen={openModal}
-           isSound={isSound}
-           setIsSound={setIsSound}
+        {firstVideoEnded && (
+        <>
+          <Controller
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+            currentAudioIndex={currentAudioIndex}
+            setCurrentAudioIndex={setCurrentAudioIndex}
+            isOpen={isModalOpen} 
+            onOpen={openModal}
+            isSound={isSound}
+            setIsSound={setIsSound}
           />
-        <TextSpace currentAudioIndex={currentAudioIndex} isPlaying={isPlaying}/>
-        <CameraModal isOpen={isModalOpen} onClose={closeModal} selectedSlide={selectedSlide} onSelectSlide={setSelectedSlide}/>
-        <ProductModal isClick = {isClick} onClose={productCloseModal} productName = {productName}/>
+          <TextSpace currentAudioIndex={currentAudioIndex} isPlaying={isPlaying}/>
+          <CameraModal isOpen={isModalOpen} onClose={closeModal} selectedSlide={selectedSlide} onSelectSlide={setSelectedSlide}/>
+          <ProductModal isClick={isClick} onClose={productCloseModal} productName={productName}/>
+        </>
+      )}
       </div>
   );
 }

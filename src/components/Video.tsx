@@ -7,13 +7,15 @@ interface VideoProps {
   isOpen: boolean;
   videoRef:React.RefObject<HTMLVideoElement>;
   isSound:boolean;
+  onFirstVideoEnd: () => void; // 新しいプロップを追加
 }
 
 const Video: React.FC<VideoProps> = ({ 
   selectedSlide,
   isOpen,
   videoRef,
-  isSound
+  isSound,
+  onFirstVideoEnd // 新しいプロップを受け取る
 }) => {
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -33,6 +35,7 @@ const Video: React.FC<VideoProps> = ({
   const videos = data.videos
   const [currentVideo, setCurrentVideo] = useState<string>("");
   const [nextVideo, setNextVideo] = useState<string>("");
+  const [isFirstPlay, setIsFirstPlay] = useState<boolean>(true);
 
   const selectRandomVideo = () => {
     const videoList = videos[selectedSlide];
@@ -41,11 +44,11 @@ const Video: React.FC<VideoProps> = ({
   };
 
   useEffect(() => {
-    // selectedSlideのインデックスに基づいてビデオリストを取得し、ランダムに選択
-    const initialVideo = selectRandomVideo();
+    // 初回の特定のビデオを設定
+    const initialVideo = "/OP.mp4"; // ここに特定のビデオのURLを設定
     setCurrentVideo(initialVideo);
     setNextVideo(initialVideo); // 初回は同じビデオを設定
-  }, [selectedSlide, videos]);
+  }, []);
 
     useEffect(() => {
       const videoElement = videoRef.current;
@@ -62,16 +65,17 @@ const Video: React.FC<VideoProps> = ({
       if (videoElement) {
         videoElement.muted = !isSound;
       }
-    }, [isSound, videoRef]);
+    }, [isSound]);
 
     const handleVideoEnded = () => {
       const videoElement = videoRef.current;
     if (videoElement) {
       videoElement.pause(); // 一度ビデオを停止
 
-      // 次のビデオを選択し、ロードイベントで再生を開始
-      const newVideo = selectRandomVideo();
-      setNextVideo(newVideo);
+       // 次のビデオを選択し、ロードイベントで再生を開始
+       onFirstVideoEnd(); // 初回のビデオが終了したらコールバックを呼ぶ
+       const newVideo = isFirstPlay ? currentVideo : selectRandomVideo(); // 初回は特定のビデオ、以降はランダム
+       setNextVideo(newVideo);
 
       // 一時的に src を空にして再設定
       videoElement.src = "";
@@ -90,6 +94,7 @@ const Video: React.FC<VideoProps> = ({
       if (videoElement) {
         videoElement.play(); // 新しいビデオを再生
       }
+      setIsFirstPlay(false); // 初回再生が完了したらフラグを更新
     };
 
   return (

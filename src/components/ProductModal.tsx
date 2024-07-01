@@ -1,7 +1,7 @@
 import React from 'react'
 import { useControl } from './hooks/PointOverContext';
 
-interface CameraModalProps {
+interface ProductModalProps {
     isClick: boolean;
     onClose: () => void;
     productName:string;
@@ -9,7 +9,7 @@ interface CameraModalProps {
 
 const products = [
     {
-      name:"OBJ-EWHRT",
+      name:"OBJ_EWHRT",
       image:"./Linear/productPicture/EWHRT.png",
       link:"https://official.koganei.co.jp/product/EWHRT"
     },
@@ -18,9 +18,19 @@ const products = [
       image:"./Linear/productPicture/NHBDPG-40.png",
       link:"https://official.koganei.co.jp/product/NHBDPG"
     },
+    {
+      name:"OBJ_NHBDSL-12",
+      image:"./Linear/productPicture/NHBDSL.png",
+      link:"https://official.koganei.co.jp/product/NHBDSL_ALL"
+    },
+    {
+      name:"OBJ_MBDA10",
+      image:"./Linear/productPicture/MBDA.png",
+      link:"https://official.koganei.co.jp/product/MBDA_ALL"
+    },
 ]
 
-const ProductModal: React.FC<CameraModalProps>  = ({isClick, onClose, productName}) => {
+const ProductModal: React.FC<ProductModalProps>  = ({isClick, onClose, productName}) => {
   const { isPointerOver, setIsPointerOver } = useControl();
     if (!isClick) return null;
 
@@ -35,7 +45,7 @@ const ProductModal: React.FC<CameraModalProps>  = ({isClick, onClose, productNam
       event.stopPropagation();
       onClose();
       setIsPointerOver(false);
-    };
+    };   
 
     const product = products.find((product) => product.name === productName);
 

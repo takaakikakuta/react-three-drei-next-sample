@@ -80,8 +80,6 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
 
     if(videoElement){
       composer.setSize(videoElement.clientWidth, videoElement.clientHeight);
-      console.log("発火");
-      console.log(videoElement.clientWidth);
     }
 
     composerRef.current = composer;
@@ -148,7 +146,6 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
   useEffect(() => {
     const handleClick = () => {
       if (hoveredObject && !isPointerOver) {
-        console.log(hoveredObject.name);
         setProductName(hoveredObject.name)
         setIsClick(true)
         

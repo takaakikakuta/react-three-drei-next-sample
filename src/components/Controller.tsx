@@ -79,12 +79,14 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
 
   useEffect(() => {
     // 各音声要素にイベントリスナーを追加する
-    audioRefs.current.forEach((audio) => {
+    audioRefs.current.forEach((audio, index) => {
       const handlePlay = () => setIsPlaying(true);
       const handlePause = () => setIsPlaying(audioRefs.current.some(a => !a.paused));
+      // const handleEnded = () => autoplay(index);
 
       audio.addEventListener('play', handlePlay);
       audio.addEventListener('pause', handlePause);
+      // audio.addEventListener('ended', handleEnded);
       
       return () => {
         audio.removeEventListener('play', handlePlay);
@@ -108,6 +110,10 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
     }
   };
 
+  const autoplay = (index: number) => {
+    playNextAudio()
+  };
+
   const decreaseHandleMouseUp = () => {
     if (!isDragging) {
       // decreasePercent();
@@ -120,8 +126,7 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
       toggleSound();
       
       setTimeout(() => {
-        console.log(isSound);
-        isSound ? audioRefs.current[currentAudioIndex].play() : audioRefs.current[currentAudioIndex].muted
+        isSound ? !audioRefs.current[currentAudioIndex].muted : audioRefs.current[currentAudioIndex].muted
       }, 0);
        
     }
@@ -157,20 +162,17 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
       const newSoundState = !prev;
       if (audioRefs.current[currentAudioIndex]) {
         audioRefs.current[currentAudioIndex].muted = !newSoundState;
-        if (newSoundState) {
-          audioRefs.current[currentAudioIndex].play();
-        }
       }
       return newSoundState;
     });
-  }
+  };
 
   const toggleCollapse = () => {
     setIsCollapsed((prev) => !prev);
   };
 
   const playNextAudio = () => {
-    if(progress === 0){
+    if(progress === 0){      
       audioRefs.current[currentAudioIndex].play(); // 次の音声を再生 
       audioRefs.current[currentAudioIndex].muted = !isSound;
       setProgress((prev) => prev + 1)
@@ -248,8 +250,8 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
                     onTouchStart={handleTouchStart}
                     onTouchEnd={increaseHandleTouchEnd}
                   >
-                    STEP<br/>
-                    {progress} / {audioFiles.length}
+                    Auto<br/>Play<br/>
+                    {/* {progress} / {audioFiles.length} */}
                   </span>
                 </div>
                 <div className="w-48 md:h-32 h-24 bg-orange-400 p-2 pb-4 mr-2 rounded-xl">

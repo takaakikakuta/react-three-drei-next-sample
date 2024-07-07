@@ -12,6 +12,7 @@ import { FXAAShader } from 'three-stdlib';
 import { useControl } from './hooks/PointOverContext';
 import { data } from './data'; // データファイルをインポート
 import { usePosition } from './hooks/PositionContext';
+import { log } from 'three/examples/jsm/nodes/Nodes.js';
 
 extend({ EffectComposer, RenderPass, OutlinePass, ShaderPass });
 
@@ -23,6 +24,8 @@ interface TestMVPProps {
   onCameraData: (position: THREE.Vector3, quaternion: THREE.Quaternion) => void;
   currentAudioIndex: number; // インデックスを受け取るプロパティを追加
   videoRef:React.RefObject<HTMLVideoElement>;
+  videoRef1:React.RefObject<HTMLVideoElement>;
+  videoRef2:React.RefObject<HTMLVideoElement>;
   isClick:boolean;
   selectedSlide:number;
   setIsClick:React.Dispatch<React.SetStateAction<boolean>>;
@@ -30,7 +33,16 @@ interface TestMVPProps {
   isPlaying:boolean;
 }
 
-const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, videoRef, setProductName, setIsClick, selectedSlide, isPlaying}) => {
+const Test_MVP: React.FC<TestMVPProps> = ({ 
+  onCameraData,
+  currentAudioIndex,
+  videoRef,
+  videoRef1,
+  videoRef2,
+  setProductName,
+  setIsClick,
+  selectedSlide, 
+  isPlaying}) => {
   const groupRef = useRef<THREE.Group>(null!);
   const { scene: modelScene, cameras, animations } = useGLTF('/MapModel_Animation.glb'); // GLBファイルのパスを指定
   const  { actions, names}  = useAnimations(animations)
@@ -42,6 +54,7 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
   const composerRef = useRef<EffectComposer | null>(null);
   const outlinePassRef = useRef<OutlinePass | null>(null);
   const { isPointerOver, setIsPointerOver } = useControl();
+  const { dragging, click, handleMouseDown, handleMouseUp } = usePosition();
 
   const {
     scale,
@@ -49,6 +62,14 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
   } = usePosition();
 
   const composer = new EffectComposer(gl);
+
+  const getElementSize = (element: HTMLElement | null): { width: number, height: number } => {
+    if (element) {
+      const rect = element.getBoundingClientRect();
+      return { width: rect.width, height: rect.height };
+    }
+    return { width: 0, height: 0 };
+  };
   
   useEffect(() => {
     if (cameras && cameras.length > 0) {
@@ -74,24 +95,22 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
   }, [actions, animations, cameras, onCameraData, modelScene]);
 
   useEffect(() => {
-    const videoElement = videoRef.current;
+    const videoElement = videoRef.current    
 
     composer.addPass(new RenderPass(mainScene, camera));
 
-    if(videoElement){
-      composer.setSize(videoElement.clientWidth, videoElement.clientHeight);
+    if (videoElement) {
+      const size = getElementSize(videoElement);      
+      composer.setSize(size.width, size.height);
     }
 
     composerRef.current = composer;
 
-    console.log(composerRef.current);
-    
-
     const handleResize = () => {
+      const videoElement = videoRef.current || videoRef1.current || videoRef2.current;
+
       if(videoElement){
-        composer.setSize(videoElement.clientWidth, videoElement.clientHeight);
-        console.log(videoElement);
-        
+        composer.setSize(videoElement.clientWidth, videoElement.clientHeight);       
         
       }
     };
@@ -99,7 +118,7 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
 
-  }, [gl, mainScene, camera, selectedSlide, scale, position]);
+  }, [gl, mainScene, camera, selectedSlide, scale, position,videoRef, videoRef1, videoRef2]);
 
   useEffect(() => {
     // インデックスに基づいてオブジェクトのリストを取得し、それをhoveredObjectsに設定
@@ -110,7 +129,6 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
         // foundObjectの親がSceneでない場合、親のポジションを加算
         if (foundObject.parent && foundObject.parent.name !== 'Scene') {
           const parentPosition = new THREE.Vector3();
-          console.log(parentPosition);
           
           foundObject.parent.getWorldPosition(parentPosition);
           clonedObject.position.add(parentPosition);
@@ -144,19 +162,12 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
 
   // マウスクリックのイベントリスナーを追加
   useEffect(() => {
-    const handleClick = () => {
-      if (hoveredObject && !isPointerOver) {
-        setProductName(hoveredObject.name)
-        setIsClick(true)
-        
-      }
-    };
-
-    window.addEventListener('click', handleClick);
-    return () => {
-      window.removeEventListener('click', handleClick);
-    };
-  }, [hoveredObject, isPointerOver]);
+    if(hoveredObject && click){
+      
+      setProductName(hoveredObject!.name);
+      setIsClick(true);
+    }
+  }, [click]);
 
   useFrame((state, delta) => {
 
@@ -193,7 +204,7 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
       setHoveredObject(null);
       setHoveredObjectPosition(null);
       setHoveredObjectName(null); // Reset hovered object name
-    }
+    }    
 
     // ここの処理useFrameが走らなくなるから消せない
 
@@ -213,9 +224,10 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
     <>
       <primitive object={modelScene}/>
       {hoveredObjectName && hoveredObjectPosition && (
-        <Html position={hoveredObjectPosition} center>
-          <div className="flex w-40" style={{ color: 'white', background: 'black', padding: '5px', borderRadius: '5px', opacity:"50%" }}
+        <Html position={hoveredObjectPosition} center style={{ pointerEvents: 'none' }} >
+          <div className="flex w-40" style={{ color: 'white', background: 'black', padding: '5px', borderRadius: '5px', opacity:"50%", pointerEvents: 'none'}}
             dangerouslySetInnerHTML={{ __html: displayText || "" }}
+            // onPointerDown={(e) => e.stopPropagation()} // ここに追加
           />
         </Html>
       )}
@@ -224,9 +236,10 @@ const Test_MVP: React.FC<TestMVPProps> = ({ onCameraData, currentAudioIndex, vid
           ? displayName[object.name as keyof typeof displayName]
           : object.name;
         return (
-          <Html key={`${object.uuid}-${index}`} position={object.position} center>
-            <div className="flex w-40" style={{ color: 'white', background: 'black', padding: '5px', borderRadius: '5px', opacity:"50%"  }}
+          <Html key={`${object.uuid}-${index}`} position={object.position} center style={{ pointerEvents: 'none' }} >
+            <div className="flex w-40" style={{ color: 'white', background: 'black', padding: '5px', borderRadius: '5px', opacity:"50%",pointerEvents: 'none' }}
             dangerouslySetInnerHTML={{ __html: narrationName || "" }}
+            // onPointerDown={(e) => e.stopPropagation()} // ここに追加
           />
           </Html>
         );

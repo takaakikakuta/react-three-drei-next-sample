@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, use } from 'react';
 
 interface Position {
   x: number;
@@ -13,6 +13,7 @@ interface PositionContextType {
   setPosition: (position: Position) => void;
   setScale: (scale: number) => void;
   dragging: boolean;
+  click: boolean;
   handleScroll: (event: React.WheelEvent) => void;
   handleMouseDown: (event: React.MouseEvent) => void;
   handleMouseMove: (event: React.MouseEvent) => void;
@@ -28,8 +29,11 @@ export const PositionProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [dragging, setDragging] = useState(false);
+  const [click, setClick] = useState(false);
   const [initialMousePosition, setInitialMousePosition] = useState({ x: 0, y: 0 });
   const [initialDistance, setInitialDistance] = useState<number | null>(null);
+  const [distance, setDistance] = useState<number>(0)
+  const [move, setMove] = useState(false)
 
   const handleScroll = useCallback((event: React.WheelEvent) => {
     const newScale = scale + event.deltaY * -0.001;
@@ -41,6 +45,7 @@ export const PositionProvider: React.FC<{ children: ReactNode }> = ({ children }
   const handleMouseDown = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
     setDragging(true);
+    setClick(false)        
     setInitialMousePosition({ x: event.clientX - position.x, y: event.clientY - position.y });
   }, [position]);
 
@@ -48,13 +53,20 @@ export const PositionProvider: React.FC<{ children: ReactNode }> = ({ children }
     if (dragging) {
       const newX = event.clientX - initialMousePosition.x;
       const newY = event.clientY - initialMousePosition.y;
+      const distance = Math.sqrt(Math.pow(newX,2) + Math.pow(newY, 2));
+      setMove(true)
+      setDistance(distance)
       setPosition({ x: newX, y: newY });
     }
   }, [dragging, initialMousePosition]);
 
   const handleMouseUp = useCallback(() => {
+    if(!move && dragging){
+      setClick(true)       
+    }
     setDragging(false);
-  }, []);
+    setMove(false)
+  }, [distance,dragging]);
 
   const handleTouchStart = useCallback((event: React.TouchEvent) => {
     if (event.touches.length === 1) {
@@ -100,6 +112,7 @@ export const PositionProvider: React.FC<{ children: ReactNode }> = ({ children }
       setPosition,
       setScale,
       dragging,
+      click,
       handleScroll,
       handleMouseDown,
       handleMouseMove,

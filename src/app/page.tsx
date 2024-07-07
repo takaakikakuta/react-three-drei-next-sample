@@ -26,12 +26,15 @@ const Home: React.FC = () => {
   const [currentAudioIndex, setCurrentAudioIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false); // 再生中かどうかのステート
   const [isSound, setIsSound] = useState<boolean>(false);
+  const [isVoice, setIsVoice] = useState<boolean>(false);
   const [firstVideoEnded, setFirstVideoEnded] = useState<boolean>(false); // 最初のビデオ終了ステータス
   // for ProductModal
   const [isClick, setIsClick] = useState<boolean>(false);
   const [productName, setProductName] = useState<string>("");
   const canvasContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef1 = useRef<HTMLVideoElement>(null);
+  const videoRef2 = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // ビデオサイズ取得
@@ -85,8 +88,6 @@ const Home: React.FC = () => {
     const canvasContainerElement = canvasContainerRef.current;
     if (canvasContainerElement) {
       canvasContainerElement.style.transform = `translate(${position.x}px, ${position.y}px) scale(${scale})`;
-      canvasContainerElement.style.width = "1630px";
-      canvasContainerElement.style.height = "911px";
       
     }
     
@@ -119,8 +120,6 @@ const Home: React.FC = () => {
     
     if (canvasContainerElement && videoElement) {
       canvasContainerElement.style.transform = `translate(${position.x}px, ${position.y}px) scale(${scale})`; 
-      canvasContainerElement.style.width = "1630px";
-      canvasContainerElement.style.height = "911px";
       
     }    
 
@@ -133,8 +132,8 @@ const Home: React.FC = () => {
   return (
     // Ground Container
       <div className="h-screen relative overflow-hidden justify-center flex">
-        <Header />
-        <div 
+          <Header />
+          <div 
           ref={canvasContainerRef} 
           className="z-10 flex justify-center absolute" 
           style={{pointerEvents:"none"}}
@@ -150,26 +149,21 @@ const Home: React.FC = () => {
             ref={canvasRef}
             camera={{ fov: fovDegrees, position: cameraPosition }}
             gl={{ antialias: true, alpha: true}} // alpha: trueを追加
-            style={{
-              display:"block",
-              width: '1630px',
-              height: '100%',
-              background: 'none',
-              pointerEvents: 'none'
-            }}
-          >
+            >
             {/* デバッグ用 */}
             <ambientLight intensity={0.5} />
             <Test_MVP 
               onCameraData={handleCameraData}
               currentAudioIndex={currentAudioIndex}
               videoRef = {videoRef}
+              videoRef1 = {videoRef1}
+              videoRef2 = {videoRef2}
               isClick = {isClick} 
               setIsClick ={setIsClick}
               setProductName={setProductName}
               selectedSlide={selectedSlide}
               isPlaying={isPlaying} 
-            />
+              />
             <UpdateCamera cameraPosition={cameraPosition} cameraQuaternion={cameraQuaternion} />
           </Canvas>
         </div>
@@ -177,6 +171,8 @@ const Home: React.FC = () => {
           selectedSlide={selectedSlide}
           isOpen={isModalOpen}
           videoRef = {videoRef}
+          videoRef1 = {videoRef1}
+          videoRef2 = {videoRef2}
           isSound = {isSound}
           onFirstVideoEnd={handleFirstVideoEnd} // 初回のビデオ終了コールバックを渡す
         />
@@ -191,6 +187,8 @@ const Home: React.FC = () => {
             onOpen={openModal}
             isSound={isSound}
             setIsSound={setIsSound}
+            isVoice={isVoice}
+            setIsVoice={setIsVoice}
           />
           <TextSpace currentAudioIndex={currentAudioIndex} isPlaying={isPlaying}/>
           <CameraModal isOpen={isModalOpen} onClose={closeModal} selectedSlide={selectedSlide} onSelectSlide={setSelectedSlide}/>

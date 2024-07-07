@@ -14,11 +14,12 @@ interface ControllerProps {
   setIsPlaying:React.Dispatch<React.SetStateAction<boolean>>
   isSound:boolean;
   setIsSound:React.Dispatch<React.SetStateAction<boolean>>
-
+  isVoice:boolean;
+  setIsVoice:React.Dispatch<React.SetStateAction<boolean>>
 }
 
 
-const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioIndex, setCurrentAudioIndex, isPlaying, setIsPlaying, isSound, setIsSound}) => {
+const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioIndex, setCurrentAudioIndex, isPlaying, setIsPlaying, isSound, setIsSound, isVoice, setIsVoice}) => {
   const circleRef = useRef<SVGCircleElement>(null);
   // const [percent, setPercent] = useState<number>(50);
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -31,6 +32,8 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
   const audioRefs = useRef<HTMLAudioElement[]>([]); // オーディオ要素のリファレンスを管理
   
   const [progress, setProgress] = useState<number>(0);
+
+  const [isAutoPlay, setIsAutoPlay] = useState<boolean>(false);
 
   const audioFiles = data.audioFiles 
 
@@ -78,24 +81,27 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
   }, [isCollapsed]);
 
   useEffect(() => {
-    // 各音声要素にイベントリスナーを追加する
     audioRefs.current.forEach((audio, index) => {
       const handlePlay = () => setIsPlaying(true);
       const handlePause = () => setIsPlaying(audioRefs.current.some(a => !a.paused));
-      // const handleEnded = () => autoplay(index);
+      const handleEnded = () => {
+        if (isAutoPlay) {
+          playNextAudio();
+        }
+      };
 
       audio.addEventListener('play', handlePlay);
       audio.addEventListener('pause', handlePause);
-      // audio.addEventListener('ended', handleEnded);
-      
+      audio.addEventListener('ended', handleEnded);
+
       return () => {
         audio.removeEventListener('play', handlePlay);
         audio.removeEventListener('pause', handlePause);
-        
-        
+        audio.removeEventListener('ended', handleEnded);
       };
     });
-  }, [audioRefs.current]);
+  }, [isAutoPlay, audioRefs.current]);
+
 
   // 共通操作ドラッグをfalseにする　マウス
   const handleMouseDown = () => {
@@ -105,18 +111,21 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
   // MouseUpの操作
   const increaseHandleMouseUp = () => {
     if (!isDragging) {
-      // increasePercent();
       playNextAudio();
     }
   };
 
-  const autoplay = (index: number) => {
-    playNextAudio()
+  const autoplayHandleMouseUp = () => {
+    if (!isDragging) {
+      setIsAutoPlay(true)
+      console.log(isAutoPlay);
+      
+      playNextAudio();
+    }
   };
 
   const decreaseHandleMouseUp = () => {
     if (!isDragging) {
-      // decreasePercent();
       playPreviousAudio()
     }
   };
@@ -127,6 +136,17 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
       
       setTimeout(() => {
         isSound ? !audioRefs.current[currentAudioIndex].muted : audioRefs.current[currentAudioIndex].muted
+      }, 0);
+       
+    }
+  }
+
+  const handleVoiceMouseUp = () => {
+    if (!isDragging) {
+      toggleVoice();
+      
+      setTimeout(() => {
+        isVoice ? !audioRefs.current[currentAudioIndex].muted : audioRefs.current[currentAudioIndex].muted
       }, 0);
        
     }
@@ -145,20 +165,22 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
 
   const increaseHandleTouchEnd = () => {
     if (!isDragging) {
-      // increasePercent();
       playNextAudio();
     }
   };
 
   const decreaseHandleTouchEnd = () => {
     if (!isDragging) {
-      // decreasePercent();
       playPreviousAudio();
     }
   };
 
   const toggleSound = () => {
-    setIsSound((prev) => {
+    setIsSound((prev)=> !prev)
+  };
+
+  const toggleVoice = () => {
+    setIsVoice((prev) => {
       const newSoundState = !prev;
       if (audioRefs.current[currentAudioIndex]) {
         audioRefs.current[currentAudioIndex].muted = !newSoundState;
@@ -174,18 +196,23 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
   const playNextAudio = () => {
     if(progress === 0){      
       audioRefs.current[currentAudioIndex].play(); // 次の音声を再生 
-      audioRefs.current[currentAudioIndex].muted = !isSound;
+      audioRefs.current[currentAudioIndex].muted = !isVoice;      
       setProgress((prev) => prev + 1)
+      // ここにprogressの加算の式をかくと、多分ずっと無理。
+      console.log(progress);
+      
     } else {
       if(audioRefs.current[currentAudioIndex]){
         audioRefs.current[currentAudioIndex].pause(); // 現在の音声を停止
         audioRefs.current[currentAudioIndex].currentTime = 0; // 再生位置をリセット
       }
       const nextIndex = (currentAudioIndex + 1) // 次のインデックスを計算
+      console.log(nextIndex);
+      
       setCurrentAudioIndex(nextIndex);
       setTimeout(() => {
         audioRefs.current[nextIndex].play(); // 次の音声を再生
-        audioRefs.current[nextIndex].muted = !isSound;
+        audioRefs.current[nextIndex].muted = !isVoice;
         setProgress((prev) => prev + 1);
       }, 0);
     }
@@ -196,7 +223,7 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
       audioRefs.current[currentAudioIndex].pause(); // 現在の音声を停止
       audioRefs.current[currentAudioIndex].currentTime = 0; // 再生位置をリセット
       audioRefs.current[currentAudioIndex].play(); // 次の音声を再生
-      audioRefs.current[currentAudioIndex].muted = !isSound;
+      audioRefs.current[currentAudioIndex].muted = !isVoice;
     } else {
       if(audioRefs.current[currentAudioIndex]){
         audioRefs.current[currentAudioIndex].pause(); // 現在の音声を停止
@@ -206,7 +233,7 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
       setCurrentAudioIndex(prevIndex);
       setTimeout(() => {
         audioRefs.current[prevIndex].play(); // 次の音声を再生
-        audioRefs.current[prevIndex].muted = !isSound;
+        audioRefs.current[prevIndex].muted = !isVoice;
         setProgress((prev) => prev - 1);
       }, 0);
     }
@@ -221,7 +248,7 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
       onStop={() => setIsDragging(false)}
       defaultPosition={{ x: 0, y: 0 }}>
         <div 
-          className='overflow-hidden absolute bottom-10 md:left-10 w-72 md:w-60 h-auto md:pb-4 pb-0 bg-green-500 z-50 rounded-xl transform -translate-x-1/2 flex flex-col items-center'
+          className='overflow-hidden absolute bottom-10 md:left-10 w-72 md:w-60 h-auto bg-green-400 z-50 rounded-xl transform -translate-x-1/2 flex flex-col items-center'
           onMouseEnter={() => setIsPointerOver(true)}
           onMouseLeave={() => setIsPointerOver(false)}
         >
@@ -235,7 +262,7 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
               className={`transition-max-height duration-500 ease-in-out overflow-hidden ${isCollapsed ? 'max-h-0' : 'max-h-screen'}`}
               style={{ maxHeight: isCollapsed ? '0px' : 'none' }}
             >
-              <div className="flex md:flex-col justify-center my-3">
+              <div className="flex md:flex-col justify-center">
                 <div className="w-24 md:w-28 h-24 md:h-28 p-2 flex items-center justify-center md:mx-auto">
                   <svg className="relative transform -rotate-90 h-full w-full">
                       <circle cx="50%" cy="50%" r={radius} stroke="currentColor" strokeWidth="10" fill="transparent"
@@ -243,21 +270,21 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
                       <circle ref={circleRef} cx="50%" cy="50%" r={radius} stroke="currentColor" strokeWidth="10" fill="transparent"
                         className="text-blue-500" />
                   </svg>
-                  <span 
-                    className="absolute md:text-xl text-sm cursor-pointer text-center" 
-                    onMouseDown={handleMouseDown}
-                    onMouseUp={increaseHandleMouseUp}
-                    onTouchStart={handleTouchStart}
-                    onTouchEnd={increaseHandleTouchEnd}
-                  >
-                    Auto<br/>Play<br/>
-                    {/* {progress} / {audioFiles.length} */}
-                  </span>
+                  <span
+                  className="absolute md:text-xl text-sm cursor-pointer text-center"
+                  onMouseDown={handleMouseDown}
+                  onMouseUp={increaseHandleMouseUp}
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={increaseHandleTouchEnd}
+                >
+                  STEP<br/>
+                  {progress} / {audioFiles.length}
+                </span>
                 </div>
-                <div className="w-48 md:h-32 h-24 bg-orange-400 p-2 pb-4 mr-2 rounded-xl">
-                  <div className="flex h-1/2 mb-2">
+                <div className="w-48 md:h-48 h-24 bg-gray-300 p-2 pb-6 mr-2 rounded-xl mb-2">
+                  <div className="flex h-1/3 mb-2">
                     <button 
-                    className={`w-1/2 h-full mr-1 rounded-lg flex justify-center items-center ${percent === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-400'}`}
+                    className={`w-1/2 h-full mr-1 rounded-lg flex justify-center items-center shadow-[inset_0_0px_1px_3px_#fff] active:[box-shadow:none] ${percent === 0 ? 'bg-black cursor-not-allowed' : 'bg-white'}`}
                     onMouseDown={handleMouseDown}
                     onMouseUp={decreaseHandleMouseUp}
                     onTouchStart={handleTouchStart}
@@ -265,9 +292,11 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
                     disabled={percent === 0}
                     style={percent === 0 ? { pointerEvents: 'none', touchAction: 'none' } : {}}
                     >
-                    <PlayIcon className="h-6 w-6 text-white transform rotate-180 " /></button>
+                    <PlayIcon className={`h-6 w-6 transform rotate-180 ${percent === 0 ? 'text-white' : 'text-black'}`}/>
+                    <p className={`block font-bold ${percent === 0 ? 'text-white' : 'text-black'}`}>BACK</p>
+                    </button>
                     <button 
-                      className={`w-1/2 h-full rounded-lg flex justify-center items-center ${percent === 100 ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-400'}`}
+                      className={`w-1/2 h-full rounded-lg flex justify-center items-center shadow-[inset_0_0px_1px_3px_#fff] active:[box-shadow:none] ${percent === 100 ? 'bg-black  cursor-not-allowed' : 'bg-white'}`}
                       onMouseDown={handleMouseDown}
                       onMouseUp={increaseHandleMouseUp}
                       onTouchStart={handleTouchStart}
@@ -275,11 +304,12 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
                       disabled={percent === 100}
                       style={percent === 100 ? { pointerEvents: 'none', touchAction: 'none' } : {}}
                       >
-                    <PlayIcon className="h-6 w-6 text-white" /></button>
+                      <p className={`block font-bold ${percent === 100 ? 'text-white' : 'text-black'}`}>NEXT</p>
+                    <PlayIcon className={`h-6 w-6 ${percent === 100 ? 'text-white' : 'text-black'}`} /></button>
                   </div>
-                  <div className="flex h-1/2">
+                  <div className="flex h-1/3 mb-2">
                     <button 
-                      className="w-1/2 h-full bg-red-400 mr-1 rounded-lg flex flex-col justify-center items-center shadow-lg"
+                      className="w-full h-full bg-white text-black mr-1 rounded-lg flex flex-col justify-center items-center shadow-[inset_0_0px_1px_3px_#fff] active:[box-shadow:none]"
                       onMouseDown={handleMouseDown}
                       onMouseUp={handleOpenMouseUp}
                       onTouchStart={handleTouchStart}
@@ -288,11 +318,25 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
                       </svg>
-                      <p className='hidden md:flex'>カメラ切替</p>
+                      <p className='hidden md:flex'>Switch Camera</p>
+                    </button>
+                  </div>
+                  <div className="flex h-1/3 mb-2">
+                    <button 
+                      className={`w-1/2 h-full ${isVoice ? 'bg-white' : 'bg-black'} ${isVoice ? 'text-black' : 'text-white'} mr-1 rounded-lg flex flex-col justify-center items-center mx-auto shadow-[inset_0_0px_1px_3px_#fff] active:[box-shadow:none] ${isPlaying ? 'blinking' : ''}`}
+                      onMouseDown={handleMouseDown}
+                      onMouseUp={handleVoiceMouseUp}
+                      onTouchStart={handleTouchStart}
+                      onTouchEnd={handleVoiceMouseUp}>
+                       { isVoice ?    
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5f6368"><path d="M480-400q-50 0-85-35t-35-85v-240q0-50 35-85t85-35q50 0 85 35t35 85v240q0 50-35 85t-85 35Zm0-240Zm-40 520v-123q-104-14-172-93t-68-184h80q0 83 58.5 141.5T480-320q83 0 141.5-58.5T680-520h80q0 105-68 184t-172 93v123h-80Zm40-360q17 0 28.5-11.5T520-520v-240q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v240q0 17 11.5 28.5T480-480Z"/></svg>:<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5f6368"><path d="m710-362-58-58q14-23 21-48t7-52h80q0 44-13 83.5T710-362ZM480-594Zm112 112-72-72v-206q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760v126l-80-80v-46q0-50 35-85t85-35q50 0 85 35t35 85v240q0 11-2.5 20t-5.5 18ZM440-120v-123q-104-14-172-93t-68-184h80q0 83 57.5 141.5T480-320q34 0 64.5-10.5T600-360l57 57q-29 23-63.5 39T520-243v123h-80Zm352 64L56-792l56-56 736 736-56 56Z"/></svg>
+                        
+                      }
+                      <p className='hidden md:flex'>Voice</p>
                     </button>
                     <button 
                       id="sound"
-                      className={`w-1/2 h-full bg-red-400 mr-1 rounded-lg flex flex-col justify-center items-center mx-auto shadow-lg ${isPlaying ? 'blinking' : ''}`}
+                      className={`w-1/2 h-full ${isSound ? 'bg-white' : 'bg-black'} mr-1 rounded-lg ${isSound ? 'text-black' : 'text-white'} flex flex-col justify-center items-center shadow-[inset_0_0px_1px_3px_#fff] active:[box-shadow:none]`}
                       onMouseDown={handleMouseDown}
                       onMouseUp={handleSoundMouseUp}
                       onTouchStart={handleTouchStart}
@@ -305,7 +349,7 @@ const Controller: React.FC<ControllerProps> = ({isOpen, onOpen, currentAudioInde
                         </svg>
                         
                       }
-                      <p className='hidden md:flex'>音声出力</p>
+                      <p className='hidden md:flex'>Sound</p>
                     </button>
                   </div>
                 </div>

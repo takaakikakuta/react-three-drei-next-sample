@@ -120,6 +120,10 @@ const Video: React.FC<VideoProps> = ({
       }
     };
 
+    const handleVideoWheel = (event: React.WheelEvent<HTMLVideoElement>) => {
+      event.stopPropagation();
+    };
+
     useEffect(() => {
       // selectedSlideが変更されたときに次の動画に切り替える
       const videoElement1 = videoRef1.current;
@@ -178,6 +182,7 @@ const Video: React.FC<VideoProps> = ({
             autoPlay
             muted
             onEnded={handleOpeningEnded}
+            onWheel={handleVideoWheel} // Video要素のonWheelイベントを追加
             // onLoadedData={handleLoadedData} // ビデオがロードされたら呼び出されるイベント
         ></video>
         <video
@@ -188,6 +193,8 @@ const Video: React.FC<VideoProps> = ({
             muted
             onPlay={handleVideoStarted1} // 再生開始時に次のビデオをロード
             onEnded={handleVideoEnded1}
+            onWheel={handleVideoWheel} // Video要素のonWheelイベントを追加
+            preload='auto'
         ></video>
         <video
             ref={videoRef2}
@@ -197,6 +204,8 @@ const Video: React.FC<VideoProps> = ({
             muted
             onPlay={handleVideoStarted2} // 再生開始時に次のビデオをロード
             onEnded={handleVideoEnded2}
+            onWheel={handleVideoWheel} // Video要素のonWheelイベントを追加
+            preload='auto'
         ></video>
 
       </div>

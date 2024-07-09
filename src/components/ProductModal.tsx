@@ -10,22 +10,38 @@ interface ProductModalProps {
 const products = [
     {
       name:"OBJ_EWHRT",
+      title:"電動ロータリー EWHRT",
       image:"./Linear/productPicture/EWHRT.png",
       link:"https://official.koganei.co.jp/product/EWHRT"
     },
     {
       name:"OBJ_NHBDPG-40",
+      title:"エアハンドNHBDPGシリーズ",
       image:"./Linear/productPicture/NHBDPG-40.png",
       link:"https://official.koganei.co.jp/product/NHBDPG"
     },
     {
       name:"OBJ_NHBDSL-12",
+      title:"エアハンドNHBDSLシリーズ",
       image:"./Linear/productPicture/NHBDSL.png",
       link:"https://official.koganei.co.jp/product/NHBDSL_ALL"
     },
     {
       name:"OBJ_MBDA10",
+      title:"ミニビットシリンダ",
       image:"./Linear/productPicture/MBDA.png",
+      link:"https://official.koganei.co.jp/product/MBDA_ALL"
+    },
+    {
+      name:"OBJ_LinearControler",
+      title:"リニア磁気センサコントローラ",
+      image:"./Linear/productPicture/Linear.png",
+      link:"https://official.koganei.co.jp/product/MBDA_ALL"
+    },
+    {
+      name:"OBJ_LinearSensor",
+      title:"リニア磁気センサコントローラ",
+      image:"./Linear/productPicture/Linear.png",
       link:"https://official.koganei.co.jp/product/MBDA_ALL"
     },
 ]
@@ -64,7 +80,7 @@ const ProductModal: React.FC<ProductModalProps>  = ({isClick, onClose, productNa
 
         {product && (
           <>
-            <div className="text-center font-bold text-lg mb-4">{product.name}</div>
+            <div className="text-center font-bold text-lg mb-4">{product.title}</div>
             <div className="flex justify-center">
               <img className="w-1/2" src={product.image} alt={product.name} />
             </div>

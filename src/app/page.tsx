@@ -137,6 +137,7 @@ const Home: React.FC = () => {
           ref={canvasContainerRef} 
           className="z-10 flex justify-center absolute" 
           style={{pointerEvents:"none"}}
+          onWheel={handleScroll}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
